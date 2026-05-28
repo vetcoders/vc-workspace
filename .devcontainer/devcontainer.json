@@ -1,0 +1,131 @@
+{
+  "$schema": "https://raw.githubusercontent.com/devcontainers/spec/main/schemas/devContainer.schema.json",
+  "name": "vc-workspace — vibecrafted runtime (Trixie + multi-agent + tailnet)",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "..",
+    "args": {
+      "TZ": "Europe/Warsaw",
+      "ZIG_VER": "0.13.0"
+    }
+  },
+
+  "remoteUser": "vc",
+  "containerUser": "vc",
+
+  "workspaceFolder": "/workspace",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+
+  "// MOUNTS": "Host's ~/.ssh/ mounted read-only for tailnet/sshconfig access. Cargo + rustup persistence between rebuilds.",
+  "mounts": [
+    "source=${localEnv:HOME}/.ssh,target=/home/vc/.ssh,type=bind,consistency=cached,readonly",
+    "source=${localEnv:HOME}/.cargo,target=/home/vc/.cargo,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.rustup,target=/home/vc/.rustup,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.vibecrafted,target=/home/vc/.vibecrafted,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.aicx,target=/home/vc/.aicx,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.claude,target=/home/vc/.claude,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.codex,target=/home/vc/.codex,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.config/gh,target=/home/vc/.config/gh,type=bind,consistency=cached"
+  ],
+
+  "containerEnv": {
+    "VC_WORKSPACE": "/workspace",
+    "VIBECRAFTED_HOME": "/home/vc/.vibecrafted",
+    "VC_TAILNET_MODE": "1",
+    "EDITOR": "vim"
+  },
+
+  "// NETWORK": "Host networking lets the container reach tailnet peers directly via host's tailscale interface.",
+  "runArgs": [
+    "--init",
+    "--network=host",
+    "--cap-add=SYS_PTRACE",
+    "--security-opt", "seccomp=unconfined"
+  ],
+
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": true,
+      "configureZshAsDefaultShell": true,
+      "username": "vc"
+    },
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "// === Multi-agent surface ===",
+        "saoudrizwan.claude-dev",
+        "anthropic.claude-code",
+        "continue.continue",
+        "google.geminicodeassist",
+        "github.copilot",
+        "github.copilot-chat",
+
+        "// === Rust ===",
+        "rust-lang.rust-analyzer",
+        "tamasfe.even-better-toml",
+        "vadimcn.vscode-lldb",
+        "serayuzgur.crates",
+        "fill-labs.dependi",
+
+        "// === TypeScript + React ===",
+        "ms-vscode.vscode-typescript-next",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        "dsznajder.es7-react-js-snippets",
+        "astro-build.astro-vscode",
+        "svelte.svelte-vscode",
+
+        "// === Python ===",
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-python.debugpy",
+        "charliermarsh.ruff",
+        "ms-python.mypy-type-checker",
+
+        "// === General DX ===",
+        "ms-azuretools.vscode-docker",
+        "github.vscode-github-actions",
+        "github.vscode-pull-request-github",
+        "eamodio.gitlens",
+        "EditorConfig.EditorConfig",
+        "ms-vscode.makefile-tools",
+        "redhat.vscode-yaml",
+        "tamasfe.even-better-toml"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "zsh",
+        "rust-analyzer.check.command": "clippy",
+        "rust-analyzer.cargo.targetDir": true,
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+          "source.fixAll.eslint": "explicit",
+          "source.organizeImports": "explicit"
+        },
+        "python.defaultInterpreterPath": "/usr/bin/python3",
+        "[python]": { "editor.defaultFormatter": "charliermarsh.ruff" },
+        "[typescript]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+        "[typescriptreact]": { "editor.defaultFormatter": "esbenp.prettier-vscode" }
+      }
+    }
+  },
+
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "postStartCommand": "bash .devcontainer/post-start.sh",
+
+  "// FORWARD PORTS": "Astro/Vite/Node/Python dev defaults",
+  "forwardPorts": [3000, 4321, 5173, 8000, 8080, 8888],
+  "portsAttributes": {
+    "3000": { "label": "node-dev" },
+    "4321": { "label": "astro-dev" },
+    "5173": { "label": "vite-dev" },
+    "8000": { "label": "fastapi/django" },
+    "8080": { "label": "generic-app" },
+    "8888": { "label": "jupyter" }
+  },
+
+  "shutdownAction": "stopContainer"
+}
