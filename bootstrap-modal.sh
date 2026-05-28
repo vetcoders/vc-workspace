@@ -239,14 +239,51 @@ else
   fi
 fi
 
-# aicx — crates.io published crate (primary); local source fallback
+# aicx — GitHub releases primary, loct.io bundle fallback, local source fallback
 if command -v aicx >/dev/null 2>&1; then
   ok "aicx already present: $(aicx --version 2>&1 | head -1)"
 else
-  log "  installing aicx (cargo install aicx)"
-  cargo install --locked aicx 2>&1 | tail -3 || true
+  log "  installing aicx (priority: GH releases → loct.io bundle → local build)"
+  os=$(uname -s | tr '[:upper:]' '[:lower:]')
+  arch=$(uname -m)
+  case "${os}-${arch}" in
+    linux-x86_64)   target="x86_64-unknown-linux-gnu" ;;
+    linux-aarch64)  target="aarch64-unknown-linux-gnu" ;;
+    darwin-arm64)   target="aarch64-apple-darwin" ;;
+    darwin-x86_64)  target="x86_64-apple-darwin" ;;
+    *)              target="" ;;
+  esac
+  if [ -n "$target" ]; then
+    tag=$(curl -fsSL "https://api.github.com/repos/Loctree/aicx/releases/latest" 2>/dev/null \
+          | grep -m1 '"tag_name"' | cut -d'"' -f4 || true)
+    if [ -n "$tag" ]; then
+      asset="aicx-${tag}-${target}-slim-unsigned.tar.gz"
+      url="https://github.com/Loctree/aicx/releases/download/${tag}/${asset}"
+      log "    GH release: $tag ($target)"
+      tmpdir=$(mktemp -d)
+      if curl -fsSL "$url" 2>/dev/null | tar -xz -C "$tmpdir" 2>/dev/null; then
+        bin=$(find "$tmpdir" -type f -name 'aicx' 2>/dev/null | head -1)
+        if [ -n "$bin" ]; then
+          chmod +x "$bin"
+          if [ "$(id -u)" -eq 0 ]; then
+            install -m 755 "$bin" /usr/local/bin/aicx
+          elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+            sudo install -m 755 "$bin" /usr/local/bin/aicx
+          else
+            mkdir -p "$HOME/.local/bin"
+            install -m 755 "$bin" "$HOME/.local/bin/aicx"
+          fi
+        fi
+      fi
+      rm -rf "$tmpdir"
+    fi
+  fi
+  if ! command -v aicx >/dev/null 2>&1; then
+    log "    GH path failed — trying loct.io bundle"
+    curl -fsSL https://loct.io/install.sh | sh 2>&1 | tail -3 || true
+  fi
   if ! command -v aicx >/dev/null 2>&1 && [ -f "$WORKSPACE/aicx/Cargo.toml" ]; then
-    log "  fallback: building aicx from $WORKSPACE/aicx"
+    log "    fallback: building from $WORKSPACE/aicx"
     (cd "$WORKSPACE/aicx" && cargo install --path . --locked 2>&1 | tail -3) || true
   fi
   if command -v aicx >/dev/null 2>&1; then

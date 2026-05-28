@@ -76,19 +76,43 @@ else
 fi
 
 # ── Stage 4: aicx CLI (MANDATORY) ─────────────────────────────────────────
-log "Stage 4: aicx CLI (cargo install aicx)"
+log "Stage 4: aicx CLI (GH releases → loct.io bundle → local fallback)"
 if command -v aicx >/dev/null 2>&1; then
   ok "aicx already present: $(aicx --version 2>&1 | head -1)"
+elif [ -x "$(dirname "$0")/../install-aicx.sh" ]; then
+  bash "$(dirname "$0")/../install-aicx.sh" || warn "install-aicx.sh exited non-zero"
+elif [ -x "$WORKSPACE/install-aicx.sh" ]; then
+  bash "$WORKSPACE/install-aicx.sh" || warn "install-aicx.sh exited non-zero"
 else
-  cargo install --locked aicx 2>&1 | tail -3 || warn "cargo install aicx failed"
-  if ! command -v aicx >/dev/null 2>&1 && [ -f "$WORKSPACE/aicx/Cargo.toml" ]; then
-    log "  fallback: building from $WORKSPACE/aicx"
-    (cd "$WORKSPACE/aicx" && cargo install --path . --locked 2>&1 | tail -3) \
-      || warn "aicx fallback build failed"
+  # Inline minimal install — same priority order as install-aicx.sh
+  arch=$(uname -m)
+  case "$arch" in
+    x86_64)  target="x86_64-unknown-linux-gnu" ;;
+    aarch64) target="aarch64-unknown-linux-gnu" ;;
+    *)       target="" ;;
+  esac
+  if [ -n "$target" ]; then
+    tag=$(curl -fsSL "https://api.github.com/repos/Loctree/aicx/releases/latest" 2>/dev/null \
+          | grep -m1 '"tag_name"' | cut -d'"' -f4 || true)
+    if [ -n "$tag" ]; then
+      tmpdir=$(mktemp -d)
+      curl -fsSL "https://github.com/Loctree/aicx/releases/download/${tag}/aicx-${tag}-${target}-slim-unsigned.tar.gz" \
+        | tar -xz -C "$tmpdir" 2>/dev/null \
+        && bin=$(find "$tmpdir" -type f -name 'aicx' | head -1) \
+        && [ -n "$bin" ] \
+        && sudo install -m 755 "$bin" /usr/local/bin/aicx
+      rm -rf "$tmpdir"
+    fi
   fi
-  command -v aicx >/dev/null && ok "aicx: $(aicx --version 2>&1 | head -1)" \
-    || warn "aicx not in PATH after install — MANDATORY install failed"
+  if ! command -v aicx >/dev/null 2>&1; then
+    curl -fsSL https://loct.io/install.sh | sh 2>&1 | tail -3 || true
+  fi
+  if ! command -v aicx >/dev/null 2>&1 && [ -f "$WORKSPACE/aicx/Cargo.toml" ]; then
+    (cd "$WORKSPACE/aicx" && cargo install --path . --locked 2>&1 | tail -3) || true
+  fi
 fi
+command -v aicx >/dev/null && ok "aicx: $(aicx --version 2>&1 | head -1)" \
+  || warn "aicx not in PATH after install — MANDATORY install failed"
 
 # ── Stage 5: TypeScript/React global tools ────────────────────────────────
 log "Stage 5: TypeScript + React global tools"

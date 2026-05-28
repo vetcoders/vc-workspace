@@ -35,6 +35,7 @@ code .
 
 ```bash
 bash install-vibecrafted.sh    # clone + install vibecrafted runtime only
+bash install-aicx.sh           # aicx via GH releases → loct.io → local fallback
 bash install-agents.sh         # claude + codex + gemini + antigravity-sdk
 ```
 
@@ -71,7 +72,7 @@ These are **required** parts of the vibecrafted framework install. If either
 fails during image build / bootstrap, the install errors out:
 
 - **`loct`** — Loctree semantic-AST CLI · `curl -fsSL https://loct.io/install.sh | sh`
-- **`aicx`** — Vibecrafted continuity runtime · `cargo install aicx` ([crates.io](https://crates.io/crates/aicx) · [Loctree/aicx](https://github.com/Loctree/aicx))
+- **`aicx`** — Vibecrafted continuity runtime · GitHub Releases primary, loct.io bundle fallback. See [`install-aicx.sh`](./install-aicx.sh) or [Loctree/aicx releases](https://github.com/Loctree/aicx/releases).
 - **`vibecrafted`** — full skill ecosystem (`vc-init`, `vc-operator`, `vc-marbles`, ...) · [vetcoders/vibecrafted](https://github.com/vetcoders/vibecrafted)
 
 See [vibecrafted.io/aicx](https://vibecrafted.io/aicx) for the AICX
@@ -120,7 +121,7 @@ mount your sshconfig as a workspace file or use a tailnet sidecar.
 | 5 | Codex + Gemini CLI | npm | `--skip-agents` |
 | 6 | `uv` | astral.sh | — |
 | 7 | `eza`/`bat`/`fd`/`rg`/`just`/`zoxide`/`tokei` | cargo | `--skip-rust-cli` |
-| **8** | **`loct` (loct.io installer), `aicx` (`cargo install aicx`)** | **curl + crates.io** | **MANDATORY** |
+| **8** | **`loct` (loct.io installer), `aicx` (GH releases → loct.io)** | **curl + GH releases** | **MANDATORY** |
 | 9 | `microsandbox` | local workspace if mounted | — |
 
 ```bash

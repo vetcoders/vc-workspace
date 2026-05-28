@@ -103,9 +103,28 @@ RUN cargo install --locked \
 # ── MANDATORY framework binaries: loct + aicx ─────────────────────────────
 # Per framework install contract, both loct (Loctree) and aicx (Vibecrafted
 # continuity runtime) are REQUIRED. If either fails, the image build fails.
+#
+# loct: official installer at loct.io
+# aicx: 1) GitHub releases (Loctree/aicx), 2) loct.io bundle fallback
 RUN curl -fsSL https://loct.io/install.sh | sh \
     && loct --version
-RUN cargo install --locked aicx \
+
+RUN set -e \
+    && ARCH=$(uname -m) \
+    && case "$ARCH" in \
+         x86_64)  TARGET="x86_64-unknown-linux-gnu" ;; \
+         aarch64) TARGET="aarch64-unknown-linux-gnu" ;; \
+         *) echo "unsupported arch for aicx: $ARCH"; exit 1 ;; \
+       esac \
+    && TAG=$(curl -fsSL "https://api.github.com/repos/Loctree/aicx/releases/latest" \
+             | grep -m1 '"tag_name"' | cut -d'"' -f4) \
+    && ASSET="aicx-${TAG}-${TARGET}-slim-unsigned.tar.gz" \
+    && URL="https://github.com/Loctree/aicx/releases/download/${TAG}/${ASSET}" \
+    && echo "Installing aicx ${TAG} (${TARGET}) from GH releases" \
+    && mkdir -p /tmp/aicx \
+    && curl -fsSL "$URL" | tar -xz -C /tmp/aicx \
+    && find /tmp/aicx -type f -name 'aicx' -exec install -m 755 {} /home/${USER}/.cargo/bin/aicx \; \
+    && rm -rf /tmp/aicx \
     && aicx --version
 
 # ── ssh config bridge: predefine mount points ─────────────────────────────
