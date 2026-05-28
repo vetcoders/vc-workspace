@@ -64,9 +64,18 @@ The Debian Trixie devcontainer image ships with:
 - **Node.js 20** (npm + pnpm + yarn) + TypeScript + Vite + create-vite/next/astro
 - **Python 3.12** (system) + `uv` (Astral) + ruff + mypy + pytest + ipython
 - **Zig** 0.13.0
-- **Loctree** (`loct`) — semantic AST + structural map
-- **AICX** (`aicx`) — agent session indexing + retrieval
-- **vibecrafted** — full skill ecosystem (`vc-init`, `vc-operator`, etc.)
+
+### Framework contract — mandatory binaries
+
+These are **required** parts of the vibecrafted framework install. If either
+fails during image build / bootstrap, the install errors out:
+
+- **`loct`** — Loctree semantic-AST CLI · `curl -fsSL https://loct.io/install.sh | sh`
+- **`aicx`** — Vibecrafted continuity runtime · `cargo install aicx` ([crates.io](https://crates.io/crates/aicx) · [Loctree/aicx](https://github.com/Loctree/aicx))
+- **`vibecrafted`** — full skill ecosystem (`vc-init`, `vc-operator`, `vc-marbles`, ...) · [vetcoders/vibecrafted](https://github.com/vetcoders/vibecrafted)
+
+See [vibecrafted.io/aicx](https://vibecrafted.io/aicx) for the AICX
+representation layer (use cases, comparison vs `aictx`, what becomes visible).
 
 ## Tailnet / sshconfig integration
 
@@ -111,7 +120,7 @@ mount your sshconfig as a workspace file or use a tailnet sidecar.
 | 5 | Codex + Gemini CLI | npm | `--skip-agents` |
 | 6 | `uv` | astral.sh | — |
 | 7 | `eza`/`bat`/`fd`/`rg`/`just`/`zoxide`/`tokei` | cargo | `--skip-rust-cli` |
-| 8 | `loct` (via `loct.io` installer), `aicx` | curl + cargo | — |
+| **8** | **`loct` (loct.io installer), `aicx` (`cargo install aicx`)** | **curl + crates.io** | **MANDATORY** |
 | 9 | `microsandbox` | local workspace if mounted | — |
 
 ```bash
@@ -172,8 +181,8 @@ and continue.
 ## Sister projects
 
 - [`vibecrafted`](https://github.com/vetcoders/vibecrafted) — release engine for AI-built software
-- [`loctree`](https://loctree.dev) — semantic-AST structural map for LLM agents
-- [`aicx`](https://github.com/Loctree/aicx) — AI session indexing
+- [`loctree`](https://loct.io) — semantic-AST structural map for LLM agents
+- [`aicx`](https://vibecrafted.io/aicx) — Vibecrafted continuity runtime (intention memory)
 
 ## License
 

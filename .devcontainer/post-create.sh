@@ -75,16 +75,19 @@ else
     || warn "loct not in PATH after install"
 fi
 
-# ── Stage 4: aicx CLI ─────────────────────────────────────────────────────
-log "Stage 4: aicx CLI"
+# ── Stage 4: aicx CLI (MANDATORY) ─────────────────────────────────────────
+log "Stage 4: aicx CLI (cargo install aicx)"
 if command -v aicx >/dev/null 2>&1; then
-  ok "aicx already present"
-elif [ -f "$WORKSPACE/aicx/Cargo.toml" ]; then
-  log "  building aicx from $WORKSPACE/aicx"
-  (cd "$WORKSPACE/aicx" && cargo install --path . --locked 2>&1 | tail -3) \
-    || warn "aicx build failed"
+  ok "aicx already present: $(aicx --version 2>&1 | head -1)"
 else
-  warn "aicx not mounted — install manually: cargo install --git https://github.com/Loctree/aicx aicx"
+  cargo install --locked aicx 2>&1 | tail -3 || warn "cargo install aicx failed"
+  if ! command -v aicx >/dev/null 2>&1 && [ -f "$WORKSPACE/aicx/Cargo.toml" ]; then
+    log "  fallback: building from $WORKSPACE/aicx"
+    (cd "$WORKSPACE/aicx" && cargo install --path . --locked 2>&1 | tail -3) \
+      || warn "aicx fallback build failed"
+  fi
+  command -v aicx >/dev/null && ok "aicx: $(aicx --version 2>&1 | head -1)" \
+    || warn "aicx not in PATH after install — MANDATORY install failed"
 fi
 
 # ── Stage 5: TypeScript/React global tools ────────────────────────────────

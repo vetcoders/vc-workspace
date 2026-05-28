@@ -214,35 +214,53 @@ else
   log "Stage 7/9: skipped (--skip-rust-cli)"
 fi
 
-# ── Stage 8: vc-runtime CLIs (loct, aicx) ────────────────────────────────
-log "Stage 8/9: vc-runtime CLIs (loct, aicx)"
+# ── Stage 8: MANDATORY framework binaries (loct + aicx) ──────────────────
+# loct (Loctree) and aicx (Vibecrafted continuity runtime) are required parts
+# of the framework install contract. If either fails, this stage exits non-zero.
+log "Stage 8/9: MANDATORY framework binaries (loct + aicx)"
 
-# loct via official installer (loct.io); fall back to local build if mounted
+vcf_install_fail=0
+
+# loct — official installer at loct.io (primary); local source fallback
 if command -v loct >/dev/null 2>&1; then
   ok "loct already present: $(loct --version 2>&1 | head -1)"
 else
-  log "  installing loct via official installer (loct.io)"
-  if curl -fsSL https://loct.io/install.sh | sh 2>&1 | tail -3; then
-    command -v loct >/dev/null 2>&1 && ok "loct: $(loct --version 2>&1 | head -1)" \
-      || warn "loct installed but not in PATH (refresh shell or check ~/.cargo/bin)"
-  elif [ -f "$WORKSPACE/loctree-suite/Cargo.toml" ]; then
-    log "  curl install failed — falling back to local build from $WORKSPACE/loctree-suite"
-    (cd "$WORKSPACE/loctree-suite" && cargo install --path crates/loct --locked 2>&1 | tail -3) \
-      || warn "loct local build failed"
+  log "  installing loct (curl -fsSL https://loct.io/install.sh | sh)"
+  curl -fsSL https://loct.io/install.sh | sh 2>&1 | tail -3 || true
+  if ! command -v loct >/dev/null 2>&1 && [ -f "$WORKSPACE/loctree-suite/Cargo.toml" ]; then
+    log "  fallback: building loct from $WORKSPACE/loctree-suite"
+    (cd "$WORKSPACE/loctree-suite" && cargo install --path crates/loct --locked 2>&1 | tail -3) || true
+  fi
+  if command -v loct >/dev/null 2>&1; then
+    ok "loct: $(loct --version 2>&1 | head -1)"
   else
-    warn "loct install failed and no local source — skip"
+    err "loct install FAILED — framework contract violated"
+    vcf_install_fail=1
   fi
 fi
 
-# aicx from workspace if mounted
+# aicx — crates.io published crate (primary); local source fallback
 if command -v aicx >/dev/null 2>&1; then
-  ok "aicx already present"
-elif [ -f "$WORKSPACE/aicx/Cargo.toml" ]; then
-  log "  building aicx from $WORKSPACE/aicx"
-  (cd "$WORKSPACE/aicx" && cargo install --path . --locked 2>&1 | tail -3) \
-    || warn "aicx local build failed"
+  ok "aicx already present: $(aicx --version 2>&1 | head -1)"
 else
-  warn "aicx not mounted at $WORKSPACE/aicx — skipping"
+  log "  installing aicx (cargo install aicx)"
+  cargo install --locked aicx 2>&1 | tail -3 || true
+  if ! command -v aicx >/dev/null 2>&1 && [ -f "$WORKSPACE/aicx/Cargo.toml" ]; then
+    log "  fallback: building aicx from $WORKSPACE/aicx"
+    (cd "$WORKSPACE/aicx" && cargo install --path . --locked 2>&1 | tail -3) || true
+  fi
+  if command -v aicx >/dev/null 2>&1; then
+    ok "aicx: $(aicx --version 2>&1 | head -1)"
+  else
+    err "aicx install FAILED — framework contract violated"
+    vcf_install_fail=1
+  fi
+fi
+
+if [ "$vcf_install_fail" -ne 0 ]; then
+  err "MANDATORY framework binaries failed to install — see above"
+  err "Hint: check network access, or run 'cargo install aicx' / 'curl https://loct.io/install.sh | sh' manually"
+  exit 1
 fi
 
 # ── Stage 9: microsandbox (libkrun substrate, if workspace mounted) ──────

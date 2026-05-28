@@ -100,6 +100,14 @@ RUN cargo install --locked \
       cargo-watch cargo-edit cargo-expand cargo-outdated cargo-audit \
     && rm -rf /home/${USER}/.cargo/registry/cache
 
+# ── MANDATORY framework binaries: loct + aicx ─────────────────────────────
+# Per framework install contract, both loct (Loctree) and aicx (Vibecrafted
+# continuity runtime) are REQUIRED. If either fails, the image build fails.
+RUN curl -fsSL https://loct.io/install.sh | sh \
+    && loct --version
+RUN cargo install --locked aicx \
+    && aicx --version
+
 # ── ssh config bridge: predefine mount points ─────────────────────────────
 # Host's ~/.ssh/ will be bind-mounted at runtime (read-only) for cross-host
 # tailnet operations (ssh <host> for any Host in ~/.ssh/config).
@@ -123,10 +131,6 @@ RUN npm install -g @openai/codex \
 # Google Gemini CLI
 RUN npm install -g @google/gemini-cli \
     && (gemini --version || echo "gemini installed but version check failed")
-
-# Loctree CLI (loct) — official installer at loct.io
-RUN curl -fsSL https://loct.io/install.sh | sh \
-    && (command -v loct >/dev/null && loct --version || echo "loct installed (verify in PATH)")
 
 # Antigravity Python SDK (Google's agent framework — Python install via uv)
 RUN pipx install antigravity-sdk 2>/dev/null \
