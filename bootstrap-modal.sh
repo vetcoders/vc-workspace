@@ -217,15 +217,21 @@ fi
 # ── Stage 8: vc-runtime CLIs (loct, aicx) ────────────────────────────────
 log "Stage 8/9: vc-runtime CLIs (loct, aicx)"
 
-# loct from loctree-suite if mounted, else cargo install from git
+# loct via official installer (loct.io); fall back to local build if mounted
 if command -v loct >/dev/null 2>&1; then
   ok "loct already present: $(loct --version 2>&1 | head -1)"
-elif [ -f "$WORKSPACE/loctree-suite/Cargo.toml" ]; then
-  log "  building loct from $WORKSPACE/loctree-suite"
-  (cd "$WORKSPACE/loctree-suite" && cargo install --path crates/loct --locked 2>&1 | tail -3) \
-    || warn "loct local build failed"
 else
-  warn "loctree-suite not mounted at $WORKSPACE/loctree-suite — skipping loct"
+  log "  installing loct via official installer (loct.io)"
+  if curl -fsSL https://loct.io/install.sh | sh 2>&1 | tail -3; then
+    command -v loct >/dev/null 2>&1 && ok "loct: $(loct --version 2>&1 | head -1)" \
+      || warn "loct installed but not in PATH (refresh shell or check ~/.cargo/bin)"
+  elif [ -f "$WORKSPACE/loctree-suite/Cargo.toml" ]; then
+    log "  curl install failed — falling back to local build from $WORKSPACE/loctree-suite"
+    (cd "$WORKSPACE/loctree-suite" && cargo install --path crates/loct --locked 2>&1 | tail -3) \
+      || warn "loct local build failed"
+  else
+    warn "loct install failed and no local source — skip"
+  fi
 fi
 
 # aicx from workspace if mounted

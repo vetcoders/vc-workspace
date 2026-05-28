@@ -61,15 +61,18 @@ command -v vibecrafted >/dev/null 2>&1 && ok "vibecrafted: $(vibecrafted --versi
   || warn "vibecrafted CLI not in PATH"
 
 # ── Stage 3: loctree (loct) binary ────────────────────────────────────────
-log "Stage 3: loct CLI"
+log "Stage 3: loct CLI (official installer: loct.io)"
 if command -v loct >/dev/null 2>&1; then
   ok "loct already present"
-elif [ -f "$WORKSPACE/loctree-suite/Cargo.toml" ]; then
-  log "  building loct from $WORKSPACE/loctree-suite"
-  (cd "$WORKSPACE/loctree-suite" && cargo install --path crates/loct --locked 2>&1 | tail -3) \
-    || warn "loct build failed"
 else
-  warn "loctree-suite not mounted — install upstream from your loctree distribution"
+  curl -fsSL https://loct.io/install.sh | sh 2>&1 | tail -3 || warn "loct curl install failed"
+  if ! command -v loct >/dev/null 2>&1 && [ -f "$WORKSPACE/loctree-suite/Cargo.toml" ]; then
+    log "  fallback: building from $WORKSPACE/loctree-suite"
+    (cd "$WORKSPACE/loctree-suite" && cargo install --path crates/loct --locked 2>&1 | tail -3) \
+      || warn "loct fallback build failed"
+  fi
+  command -v loct >/dev/null && ok "loct: $(loct --version 2>&1 | head -1)" \
+    || warn "loct not in PATH after install"
 fi
 
 # ── Stage 4: aicx CLI ─────────────────────────────────────────────────────

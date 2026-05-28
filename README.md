@@ -111,7 +111,7 @@ mount your sshconfig as a workspace file or use a tailnet sidecar.
 | 5 | Codex + Gemini CLI | npm | `--skip-agents` |
 | 6 | `uv` | astral.sh | — |
 | 7 | `eza`/`bat`/`fd`/`rg`/`just`/`zoxide`/`tokei` | cargo | `--skip-rust-cli` |
-| 8 | `loct`, `aicx` | local workspace if mounted | — |
+| 8 | `loct` (via `loct.io` installer), `aicx` | curl + cargo | — |
 | 9 | `microsandbox` | local workspace if mounted | — |
 
 ```bash

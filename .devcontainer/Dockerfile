@@ -124,6 +124,10 @@ RUN npm install -g @openai/codex \
 RUN npm install -g @google/gemini-cli \
     && (gemini --version || echo "gemini installed but version check failed")
 
+# Loctree CLI (loct) — official installer at loct.io
+RUN curl -fsSL https://loct.io/install.sh | sh \
+    && (command -v loct >/dev/null && loct --version || echo "loct installed (verify in PATH)")
+
 # Antigravity Python SDK (Google's agent framework — Python install via uv)
 RUN pipx install antigravity-sdk 2>/dev/null \
     || pip install --break-system-packages antigravity-sdk 2>/dev/null \
